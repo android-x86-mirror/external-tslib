@@ -17,6 +17,7 @@ SRC_FILES += fbutils.c \
 SHARED_LIBRARIES = libts
 
 LOCAL_MODULE := ts_test
+LOCAL_MODULE_TAGS := tests
 LOCAL_SRC_FILES = ts_test.c \
 		  $(SRC_FILES)
 LOCAL_C_INCLUDES = $(INCLUDES)
@@ -26,6 +27,7 @@ include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := ts_calibrate
+LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES = ts_calibrate.c \
 		  testutils.c \
 		  $(SRC_FILES)
@@ -36,6 +38,7 @@ include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := ts_print
+LOCAL_MODULE_TAGS := tests
 LOCAL_SRC_FILES = ts_print.c
 LOCAL_C_INCLUDES = $(INCLUDES)
 LOCAL_CFLAGS = $(CFLAGS)
@@ -44,6 +47,7 @@ include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := ts_print_raw
+LOCAL_MODULE_TAGS := tests
 LOCAL_SRC_FILES = ts_print_raw.c
 LOCAL_C_INCLUDES = $(INCLUDES)
 LOCAL_CFLAGS = $(CFLAGS)
@@ -52,6 +56,7 @@ include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := ts_harvest
+LOCAL_MODULE_TAGS := tests
 LOCAL_SRC_FILES = ts_harvest.c \
 		  testutils.c \
 		  $(SRC_FILES)
