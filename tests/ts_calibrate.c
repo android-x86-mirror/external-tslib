@@ -185,6 +185,7 @@ static int clearbuf(struct tsdev *ts)
 			exit(1);
 		}
 	}
+	return 0;
 }
 
 int main()
@@ -208,7 +209,7 @@ int main()
 		exit(-1);
 	}
 
-	struct tsetting *tset;
+	struct tssetting *tset;
 	tset = ts_setting(TS_ENV);
 
 	signal(SIGSEGV, sig);
@@ -216,9 +217,9 @@ int main()
 	signal(SIGTERM, sig);
 
 	if( (tsdevice = getenv("TSLIB_TSDEVICE")) != NULL ) {
-		ts = ts_touchdev(tsdevice);
+		ts = open_touchdev(tsdevice);
 	} else if (tset != NULL) {
-		ts = ts_touchdev(tset->tsdev);
+		ts = open_touchdev(tset->tsdev);
 	}
 
 	if (!ts) {
