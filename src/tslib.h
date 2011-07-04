@@ -39,6 +39,16 @@ extern "C" {
 
 struct tsdev;
 
+struct tssetting
+{
+	char *tsdev;
+	char *fbdev;
+	char *calfile;
+	char *conffile;
+	char *condev;
+	char *plugdir;
+};
+
 struct ts_sample {
 	int		x;
 	int		y;
@@ -50,6 +60,11 @@ enum ts_param {
 	TS_SCREEN_RES = 0,						/* 2 integer args, x and y */
 	TS_SCREEN_ROT,							/* 1 integer arg, 1 = rotate */
 };
+
+/*
+ * Get environment variables from settings file rather then environment.
+ */
+TSAPI struct tssetting *ts_setting(const char *filename);
 
 /*
  * Close the touchscreen device, free all resources.

@@ -159,6 +159,9 @@ TSAPI struct tslib_module_info *linear_mod_init(struct tsdev *dev, const char *p
 	int index;
 	char *calfile;
 
+	struct tssetting *tset;
+	tset = ts_setting(TS_ENV);
+
 	lin = malloc(sizeof(struct tslib_linear));
 	if (lin == NULL)
 		return NULL;
@@ -181,7 +184,13 @@ TSAPI struct tslib_module_info *linear_mod_init(struct tsdev *dev, const char *p
 	/*
 	 * Check calibration file
 	 */
-	if( (calfile = getenv("TSLIB_CALIBFILE")) == NULL) calfile = TS_POINTERCAL;
+	if( (calfile = getenv("TSLIB_CALIBFILE")) == NULL) {
+		if (tset != NULL) {
+			calfile = tset->calfile;
+		} else {
+			calfile = TS_POINTERCAL;
+		}
+	}
 	if (stat(calfile, &sbuf)==0) {
 		pcal_fd = fopen(calfile, "r");
 		for (index = 0; index < 7; index++)
@@ -204,6 +213,7 @@ TSAPI struct tslib_module_info *linear_mod_init(struct tsdev *dev, const char *p
 		return NULL;
 	}
 
+	free(tset);
 	return &lin->module;
 }
 

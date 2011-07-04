@@ -102,7 +102,7 @@ static int check_fd(struct tslib_input *i)
 	we set it to constant 255. It's still controlled by BTN_TOUCH - when not
 	touched, the pressure is forced to 0. */
 
-	if (!(absbit[BIT_WORD(ABS_PRESSURE)] & BIT_MASK(ABS_PRESSURE))) {
+	if (1 || !(absbit[BIT_WORD(ABS_PRESSURE)] & BIT_MASK(ABS_PRESSURE))) {
 		i->current_p = 255;
 
 		if ((ioctl(ts->fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
@@ -154,6 +154,7 @@ static int ts_input_read(struct tslib_module_info *inf,
 			case EV_KEY:
 				switch (ev.code) {
 				case BTN_TOUCH:
+				case BTN_MOUSE:
 					if (ev.value == 0)
 						pen_up = 1;
 					break;
@@ -183,9 +184,11 @@ static int ts_input_read(struct tslib_module_info *inf,
 			case EV_ABS:
 				switch (ev.code) {
 				case ABS_X:
+				case ABS_Z:
 					i->current_x = ev.value;
 					break;
 				case ABS_Y:
+				case ABS_RX:
 					i->current_y = ev.value;
 					break;
 				case ABS_PRESSURE:
@@ -222,6 +225,7 @@ static int ts_input_read(struct tslib_module_info *inf,
 			if (ev.type == EV_ABS) {
 				switch (ev.code) {
 				case ABS_X:
+				case ABS_Z:
 					if (ev.value != 0) {
 						samp->x = i->current_x = ev.value;
 						samp->y = i->current_y;
@@ -232,6 +236,7 @@ static int ts_input_read(struct tslib_module_info *inf,
 					}
 					break;
 				case ABS_Y:
+				case ABS_RX:
 					if (ev.value != 0) {
 						samp->x = i->current_x;
 						samp->y = i->current_y = ev.value;
@@ -257,6 +262,7 @@ static int ts_input_read(struct tslib_module_info *inf,
 			} else if (ev.type == EV_KEY) {
 				switch (ev.code) {
 				case BTN_TOUCH:
+				case BTN_MOUSE:
 					if (ev.value == 0) {
 						/* pen up */
 						samp->x = 0;
@@ -338,6 +344,7 @@ TSAPI struct tslib_module_info *input_mod_init(struct tsdev *dev, const char *pa
 		return NULL;
 
 	i->module.ops = &__ts_input_ops;
+	i->module.dev = dev;
 	i->current_x = 0;
 	i->current_y = 0;
 	i->current_p = 0;
@@ -345,7 +352,7 @@ TSAPI struct tslib_module_info *input_mod_init(struct tsdev *dev, const char *pa
 	i->using_syn = 0;
 	i->grab_events = 0;
 
-	if (tslib_parse_vars(&i->module, raw_vars, NR_VARS, params)) {
+	if (check_fd(i) || tslib_parse_vars(&i->module, raw_vars, NR_VARS, params)) {
 		free(i);
 		return NULL;
 	}

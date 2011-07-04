@@ -104,8 +104,16 @@ static struct tslib_module_info *__ts_load_module_shared(struct tsdev *ts, const
 	void *handle;
 	char *plugin_directory = getenv("TSLIB_PLUGINDIR");
 
-	if (!plugin_directory)
-		plugin_directory = PLUGIN_DIR;
+	struct tssetting *tset;
+	tset = ts_setting(TS_ENV);
+
+	if (!plugin_directory) {
+		if (tset != NULL && tset->plugdir != NULL) {
+			plugin_directory = tset->plugdir;
+		} else {
+			plugin_directory = PLUGIN_DIR;
+		}
+	}
 
 	snprintf(fn, sizeof fn, "%s/%s.so", plugin_directory, module);
 
@@ -137,6 +145,7 @@ static struct tslib_module_info *__ts_load_module_shared(struct tsdev *ts, const
 
 	info->handle = handle;
 
+	free(tset);
 	return info;
 }
 

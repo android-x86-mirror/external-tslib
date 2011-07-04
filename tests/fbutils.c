@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/fcntl.h>
+#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -24,6 +24,8 @@
 #include <linux/vt.h>
 #include <linux/kd.h>
 #include <linux/fb.h>
+
+#include "tslib.h"
 
 #include "font.h"
 #include "fbutils.h"
@@ -49,6 +51,20 @@ static char *defaultconsoledevice = "/dev/tty";
 static char *fbdevice = NULL;
 static char *consoledevice = NULL;
 
+struct tsdev *open_touchdev(const char *dev)
+{
+	struct tsdev *ts = ts_open(dev, 0);
+	if (!ts) {
+		perror("ts_open");
+		return NULL;
+	}
+	if (ts_config(ts)) {
+		ts_close(ts);
+		return NULL;
+	}
+	return ts;
+}
+
 int open_framebuffer(void)
 {
 	struct vt_stat vts;
@@ -56,11 +72,24 @@ int open_framebuffer(void)
 	int fd, nr;
 	unsigned y, addr;
 
-	if ((fbdevice = getenv ("TSLIB_FBDEVICE")) == NULL)
-		fbdevice = defaultfbdevice;
+	struct tssetting *tset;
+	tset = ts_setting(TS_ENV);
 
-	if ((consoledevice = getenv ("TSLIB_CONSOLEDEVICE")) == NULL)
-		consoledevice = defaultconsoledevice;
+	if ((fbdevice = getenv ("TSLIB_FBDEVICE")) == NULL) {
+		if (tset != NULL) {
+			fbdevice = tset->fbdev;
+		} else {
+			fbdevice = defaultfbdevice;
+		}
+	}
+
+	if ((consoledevice = getenv ("TSLIB_CONSOLEDEVICE")) == NULL) {
+		if (tset != NULL) {
+			consoledevice = tset->condev;
+		} else {
+			consoledevice = defaultconsoledevice;
+		}
+	}
 
 	if (strcmp (consoledevice, "none") != 0) {
 		sprintf (vtname,"%s%d", consoledevice, 1);
@@ -143,6 +172,7 @@ int open_framebuffer(void)
 	for (y = 0; y < var.yres_virtual; y++, addr += fix.line_length)
 		line_addr [y] = fbuffer + addr;
 
+	free(tset);
 	return 0;
 }
 

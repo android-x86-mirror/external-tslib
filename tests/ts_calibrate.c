@@ -16,7 +16,7 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/fcntl.h>
+#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -196,23 +196,43 @@ int main()
 	char *tsdevice = NULL;
 	char *calfile = NULL;
 	unsigned int i, len;
+	pid_t child;
+
+	child = fork();
+	if (child > 0) {
+		getchar();
+		kill(child, SIGKILL);
+		exit(0);
+	} else if (child < 0) {
+		perror("fork");
+		exit(-1);
+	}
+
+	struct tsetting *tset;
+	tset = ts_setting(TS_ENV);
 
 	signal(SIGSEGV, sig);
 	signal(SIGINT, sig);
 	signal(SIGTERM, sig);
 
 	if( (tsdevice = getenv("TSLIB_TSDEVICE")) != NULL ) {
-		ts = ts_open(tsdevice,0);
-	} else {
-		if (!(ts = ts_open("/dev/input/event0", 0)))
-			ts = ts_open("/dev/touchscreen/ucb1x00", 0);
+		ts = ts_touchdev(tsdevice);
+	} else if (tset != NULL) {
+		ts = ts_touchdev(tset->tsdev);
 	}
 
 	if (!ts) {
-		perror("ts_open");
-		exit(1);
+		char tsdevice[20];
+		/* CW: a lazy way to go through all events.. is 99 enough? */
+		for (i = 0; i <= 99; ++i) {
+			sprintf(tsdevice, "/dev/input/event%d", i);
+			if ((ts = open_touchdev(tsdevice)))
+				break;
+		}
+		if (!ts)
+			ts = open_touchdev("/dev/touchscreen/ucb1x00");
 	}
-	if (ts_config(ts)) {
+	if (!ts) {
 		perror("ts_config");
 		exit(1);
 	}
@@ -229,8 +249,11 @@ int main()
 			   "TSLIB calibration utility", 1);
 	put_string_center (xres / 2, yres / 4 + 20,
 			   "Touch crosshair to calibrate", 2);
+	put_string_center (xres / 2, yres / 4 + 40,
+			   "Press Enter to skip", 2);
 
-	printf("xres = %d, yres = %d\n", xres, yres);
+	sprintf(cal_buffer, "Resolution %d x %d", xres, yres);
+	put_string_center (xres / 2, yres / 4 + 70, cal_buffer, 3);
 
 	// Clear the buffer
 	clearbuf(ts);
@@ -252,6 +275,9 @@ int main()
 		if ((calfile = getenv("TSLIB_CALIBFILE")) != NULL) {
 			cal_fd = open (calfile, O_CREAT | O_RDWR,
 			               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+		} else if (tset != NULL) {
+			cal_fd = open (tset->calfile, O_CREAT | O_RDWR,
+				       S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 		} else {
 			cal_fd = open (TS_POINTERCAL, O_CREAT | O_RDWR,
 			               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
@@ -268,6 +294,8 @@ int main()
 		i = -1;
 	}
 
+	free(tset);
 	close_framebuffer();
+	kill(getppid(), SIGTERM);
 	return i;
 }
