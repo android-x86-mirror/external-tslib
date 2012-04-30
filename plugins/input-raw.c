@@ -111,8 +111,9 @@ static int check_fd(struct tslib_input *i)
 		i->current_p = 255;
 
 		if ((ioctl(ts->fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
-			!(keybit[BIT_WORD(BTN_TOUCH)] & BIT_MASK(BTN_TOUCH)) ) {
-			fprintf(stderr, "tslib: Selected device is not a touchscreen (must support BTN_TOUCH events)\n");
+			( !(keybit[BIT_WORD(BTN_TOUCH)] & BIT_MASK(BTN_TOUCH)) &&
+			  !(keybit[BIT_WORD(BTN_MOUSE)] & BIT_MASK(BTN_MOUSE)) ) ) {
+			fprintf(stderr, "tslib: Selected device is not a touchscreen (must support BTN_TOUCH or BTN_MOUSE events)\n");
 			return -1;
 		}
 	}
